@@ -48,7 +48,8 @@ public class SecurityConfig {
                                 "/uploads/**",
                                 "/api/canchas/**",
                                 "/api/auth/**",
-                                "/api/usuarios/registrar"
+                                "/api/usuarios/registrar",
+                                "/api/usuarios/validarCorreo"
                         ).permitAll()
 
 
