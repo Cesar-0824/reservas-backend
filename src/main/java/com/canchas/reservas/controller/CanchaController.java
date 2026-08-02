@@ -1,5 +1,7 @@
 package com.canchas.reservas.controller;
 
+import com.cloudinary.Cloudinary;
+import com.cloudinary.utils.ObjectUtils;
 import com.canchas.reservas.model.Cancha;
 import com.canchas.reservas.repository.CanchaRepository;
 import com.canchas.reservas.service.CanchaService;
@@ -9,12 +11,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.io.File;
-import java.io.IOException;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.List;
-import java.util.UUID;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/canchas")
@@ -27,8 +25,8 @@ public class CanchaController {
     @Autowired
     private CanchaRepository canchaRepository;
 
-    private static final String UPLOAD_DIR =
-            System.getProperty("user.dir") + File.separator + "uploads" + File.separator + "canchas" + File.separator;
+    @Autowired
+    private Cloudinary cloudinary;
 
     @PostMapping("/registrar")
     public ResponseEntity<?> registrar(
@@ -38,28 +36,17 @@ public class CanchaController {
             @RequestParam(value = "imagen", required = false) MultipartFile imagen
     ) {
         try {
-            String rutaImagen = null;
+            String urlImagen = null;
 
             if (imagen != null && !imagen.isEmpty()) {
-                String nombreArchivo = UUID.randomUUID().toString() + "_" + imagen.getOriginalFilename();
-
-                File carpeta = new File(UPLOAD_DIR);
-                if (!carpeta.exists()) {
-                    carpeta.mkdirs(); // Crear carpeta si no existe
-                }
-
-                Path rutaCompleta = Paths.get(carpeta.getAbsolutePath(), nombreArchivo);
-                imagen.transferTo(rutaCompleta.toFile());
-
-                // Ruta accesible desde el navegador si se configura correctamente
-                rutaImagen = "/uploads/canchas/" + nombreArchivo;
+                urlImagen = subirACloudinary(imagen);
             }
 
             Cancha nueva = new Cancha();
             nueva.setNombre(nombre);
             nueva.setTipo(tipo);
             nueva.setPrecioHora(precioHora);
-            nueva.setImagen(rutaImagen);
+            nueva.setImagen(urlImagen);
 
             Cancha guardada = canchaRepository.save(nueva);
             return ResponseEntity.ok(guardada);
@@ -77,39 +64,30 @@ public class CanchaController {
     }
 
     @PutMapping("/actualizar/{id}")
-    public Cancha actualizarCancha(
+    public ResponseEntity<?> actualizarCancha(
             @PathVariable Integer id,
             @RequestParam("nombre") String nombre,
             @RequestParam("tipo") String tipo,
             @RequestParam("precio") Double precioHora,
             @RequestParam(value = "imagen", required = false) MultipartFile imagen
     ) {
-        String imagenUrl = null;
+        try {
+            String urlImagen = null;
 
-        if (imagen != null && !imagen.isEmpty()) {
-            try {
-                File carpeta = new File(UPLOAD_DIR);
-                if (!carpeta.exists()) {
-                    boolean creada = carpeta.mkdirs();
-                    if (!creada) {
-                        throw new IOException("No se pudo crear el directorio: " + carpeta.getAbsolutePath());
-                    }
-                }
-
-                String nombreArchivo = UUID.randomUUID().toString() + "_" + imagen.getOriginalFilename();
-                Path rutaCompleta = Paths.get(carpeta.getAbsolutePath(), nombreArchivo);
-                imagen.transferTo(rutaCompleta.toFile());
-
-                // ✅ URL pública siempre relativa y fija, sin importar la ruta física real
-                imagenUrl = "/uploads/canchas/" + nombreArchivo;
-
-            } catch (IOException e) {
-                throw new RuntimeException("Error al actualizar imagen: " + e.getMessage());
+            if (imagen != null && !imagen.isEmpty()) {
+                urlImagen = subirACloudinary(imagen);
             }
-        }
 
-        return canchaService.actualizarCancha(id, nombre, tipo, precioHora, imagenUrl);
+            Cancha actualizada = canchaService.actualizarCancha(id, nombre, tipo, precioHora, urlImagen);
+            return ResponseEntity.ok(actualizada);
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("Error al actualizar la imagen: " + e.getMessage());
+        }
     }
+
     @GetMapping("/{id}")
     public ResponseEntity<Cancha> obtenerCanchaPorId(@PathVariable Integer id) {
         return canchaRepository.findById(id)
@@ -120,5 +98,14 @@ public class CanchaController {
     @DeleteMapping("/{id}")
     public void eliminar(@PathVariable Integer id) {
         canchaService.eliminarCancha(id);
+    }
+
+    // Sube el archivo a Cloudinary (carpeta "canchas") y devuelve la URL publica (https, con CDN)
+    private String subirACloudinary(MultipartFile imagen) throws java.io.IOException {
+        Map<?, ?> resultado = cloudinary.uploader().upload(
+                imagen.getBytes(),
+                ObjectUtils.asMap("folder", "canchas")
+        );
+        return (String) resultado.get("secure_url");
     }
 }
