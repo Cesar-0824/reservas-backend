@@ -7,16 +7,32 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.core.io.ClassPathResource;
 
 import javax.annotation.PostConstruct;
+import java.io.File;
+import java.io.FileInputStream;
 import java.io.InputStream;
 
 @Configuration
 public class FirebaseConfig {
 
+    private static final String FILENAME = "reservas-front-firebase-adminsdk-fbsvc-dd270df40d.json";
+
     @PostConstruct
     public void init() {
         try {
-            InputStream serviceAccount =
-                    new ClassPathResource("reservas-front-firebase-adminsdk-fbsvc-dd270df40d.json").getInputStream();
+            InputStream serviceAccount;
+
+            // En Render (Docker), los Secret Files se montan en /etc/secrets/<archivo>
+            File secretFile = new File("/etc/secrets/" + FILENAME);
+
+            if (secretFile.exists()) {
+                // Produccion: lee el Secret File configurado en Render
+                serviceAccount = new FileInputStream(secretFile);
+                System.out.println("Firebase: usando credencial desde /etc/secrets/");
+            } else {
+                // Local: lee el archivo desde src/main/resources (como antes)
+                serviceAccount = new ClassPathResource(FILENAME).getInputStream();
+                System.out.println("Firebase: usando credencial desde el classpath (local)");
+            }
 
             FirebaseOptions options = FirebaseOptions.builder()
                     .setCredentials(GoogleCredentials.fromStream(serviceAccount))

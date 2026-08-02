@@ -3,8 +3,6 @@ package com.canchas.reservas.service;
 import com.canchas.reservas.model.Rol;
 import com.canchas.reservas.model.Usuario;
 import com.canchas.reservas.repository.UsuarioRepository;
-import com.google.firebase.auth.FirebaseAuth;
-import com.google.firebase.auth.UserRecord;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.userdetails.User;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -14,7 +12,6 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
-import java.util.EnumSet;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -37,11 +34,11 @@ public class UsuarioService implements UserDetailsService {
         return User.builder()
                 .username(usuario.getEmail())
                 .password(usuario.getContrasena())
-                .roles(usuario.getRol().name()) // ADMIN o USER
+                .roles(usuario.getRol().name())
                 .build();
     }
 
-    // --- Guardar usuario en BD y Firebase ---
+    // --- Guardar usuario en BD ---
     public Usuario guardarUsuario(Usuario usuario) throws Exception {
         if (usuarioRepository.existsByEmail(usuario.getEmail())) {
             throw new IllegalArgumentException("El correo ya está registrado");
@@ -51,29 +48,9 @@ public class UsuarioService implements UserDetailsService {
             usuario.setRol(Rol.usuario);
         }
 
-        // Guardar contraseña en claro para Firebase
-        String contraseñaOriginal = usuario.getContrasena();
+        usuario.setContrasena(passwordEncoder.encode(usuario.getContrasena()));
 
-        // Encriptar para BD
-        usuario.setContrasena(passwordEncoder.encode(contraseñaOriginal));
-
-        // Guardar en BD
-        Usuario usuarioGuardado = usuarioRepository.save(usuario);
-
-        try {
-            // Crear usuario en Firebase con contraseña en claro
-            UserRecord.CreateRequest request = new UserRecord.CreateRequest()
-                    .setEmail(usuario.getEmail())
-                    .setPassword(contraseñaOriginal);
-            UserRecord firebaseUser = FirebaseAuth.getInstance().createUser(request);
-            System.out.println("Usuario creado en Firebase: " + firebaseUser.getUid());
-        } catch (Exception e) {
-            e.printStackTrace();
-            // SOLO log, NO borrar BD
-            System.err.println("No se pudo crear el usuario en Firebase: " + e.getMessage());
-        }
-
-        return usuarioGuardado;
+        return usuarioRepository.save(usuario);
     }
 
     // --- Listar todos ---
@@ -114,7 +91,7 @@ public class UsuarioService implements UserDetailsService {
 
         String token = UUID.randomUUID().toString();
         usuario.setResetToken(token);
-        usuario.setResetTokenExpiration(LocalDateTime.now().plusHours(1)); // token válido 1 hora
+        usuario.setResetTokenExpiration(LocalDateTime.now().plusHours(1));
 
         return usuarioRepository.save(usuario);
     }
