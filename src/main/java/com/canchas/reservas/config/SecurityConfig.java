@@ -83,7 +83,8 @@ public class SecurityConfig {
         config.setAllowedOrigins(List.of(
                 "http://localhost:3000",
                 "https://reservas-frontend-git-main-cesar-bdca.vercel.app",
-                "https://reservas-frontend-75fwwl4xm-cesar-bdca.vercel.app"
+                "https://reservas-frontend-75fwwl4xm-cesar-bdca.vercel.app",
+                "https://reservas-frontend-seven.vercel.app"
         ));
 
         config.setAllowedMethods(List.of(

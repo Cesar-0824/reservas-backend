@@ -20,7 +20,8 @@ import java.util.Optional;
         origins = {
                 "http://localhost:3000",
                 "https://reservas-frontend-git-main-cesar-bdca.vercel.app",
-                "https://reservas-frontend-75fwwl4xm-cesar-bdca.vercel.app"
+                "https://reservas-frontend-75fwwl4xm-cesar-bdca.vercel.app",
+                "https://reservas-frontend-seven.vercel.app"
         },
         allowCredentials = "true"
 )
