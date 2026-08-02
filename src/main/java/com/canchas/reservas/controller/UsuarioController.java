@@ -10,7 +10,6 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
-import com.canchas.reservas.service.FirebaseService;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -24,8 +23,6 @@ public class UsuarioController {
 
     @Autowired
     private UsuarioService usuarioService;
-    @Autowired
-    private FirebaseService firebaseService;
 
     // 🔐 Solo ADMIN puede registrar usuarios
 
@@ -96,34 +93,18 @@ public class UsuarioController {
                     .body(Map.of("error", e.getMessage()));
         }
     }
+
     @PostMapping("/validarCorreo")
-    @CrossOrigin(origins = "*") // permite que se llame desde React
+    @CrossOrigin(origins = "*")
     public ResponseEntity<Map<String, Object>> validarCorreo(@RequestBody Map<String, String> request) {
         String correo = request.get("correo");
         Map<String, Object> response = new HashMap<>();
 
         try {
-            // 1️⃣ Verificar en BD
             boolean existeBD = usuarioService.existsByEmail(correo);
-            if (!existeBD) {
-                response.put("estado", false);
-                response.put("mensaje", "El correo no está registrado o credenciales invalidas");
-                return ResponseEntity.ok(response);
-            }
-
-            // 2️⃣ Verificar en Firebase
-            boolean existeFirebase = firebaseService.existeCorreo(correo);
-            if (!existeFirebase) {
-                response.put("estado", false);
-                response.put("mensaje", "El correo no está registrado o credenciales invalidas");
-                return ResponseEntity.ok(response);
-            }
-
-            // ✅ Si pasa ambas validaciones
-            response.put("estado", true);
-            response.put("mensaje", "Correo válido");
+            response.put("estado", existeBD);
+            response.put("mensaje", existeBD ? "Correo válido" : "El correo no está registrado");
             return ResponseEntity.ok(response);
-
         } catch (Exception e) {
             response.put("estado", false);
             response.put("mensaje", "Error en la validación: " + e.getMessage());
