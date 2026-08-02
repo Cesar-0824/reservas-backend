@@ -16,7 +16,14 @@ import java.util.Optional;
 
 @RestController
 @RequestMapping("/api/auth")
-@CrossOrigin(origins = "http://localhost:3000", allowCredentials = "true")
+@CrossOrigin(
+        origins = {
+                "http://localhost:3000",
+                "https://reservas-frontend-git-main-cesar-bdca.vercel.app",
+                "https://reservas-frontend-75fwwl4xm-cesar-bdca.vercel.app"
+        },
+        allowCredentials = "true"
+)
 public class AuthController {
 
     @Autowired
