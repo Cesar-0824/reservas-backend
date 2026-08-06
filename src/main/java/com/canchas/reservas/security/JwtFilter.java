@@ -60,6 +60,7 @@ public class JwtFilter extends OncePerRequestFilter {
             } catch (Exception e) {
                 // Token inválido o expirado: simplemente no se autentica,
                 // pero no se rompe la petición para rutas públicas.
+                System.out.println("❌ Error validando JWT: " + e.getClass().getSimpleName() + " - " + e.getMessage());
                 SecurityContextHolder.clearContext();
             }
         }
