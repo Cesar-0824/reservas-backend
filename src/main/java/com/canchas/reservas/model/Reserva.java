@@ -23,7 +23,7 @@ public class Reserva {
     @JoinColumn(name = "id_cancha", nullable = false)
     private Cancha cancha;
 
-    
+
 
     @Column(name = "fecha_reserva")
     private LocalDate fechaReserva;
@@ -41,6 +41,15 @@ public class Reserva {
 
     @Column(name = "comprobante_url")
     private String comprobanteUrl;
+
+    @Column(name = "motivo_cancelacion")
+    private String motivoCancelacion;
+
+    @Column(name = "observacion_cancelacion")
+    private String observacionCancelacion;
+
+    @Column(name = "cancelado_por")
+    private String canceladoPor;
 
 
     public Double getMontoTotal() {
@@ -121,6 +130,30 @@ public class Reserva {
 
     public void setId(Integer id) {
         this.id = id;
+    }
+
+    public String getMotivoCancelacion() {
+        return motivoCancelacion;
+    }
+
+    public void setMotivoCancelacion(String motivoCancelacion) {
+        this.motivoCancelacion = motivoCancelacion;
+    }
+
+    public String getObservacionCancelacion() {
+        return observacionCancelacion;
+    }
+
+    public void setObservacionCancelacion(String observacionCancelacion) {
+        this.observacionCancelacion = observacionCancelacion;
+    }
+
+    public String getCanceladoPor() {
+        return canceladoPor;
+    }
+
+    public void setCanceladoPor(String canceladoPor) {
+        this.canceladoPor = canceladoPor;
     }
 
     @Column(name = "monto_total")

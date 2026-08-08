@@ -1,5 +1,6 @@
 package com.canchas.reservas.service;
 
+import com.canchas.reservas.DTO.NotificacionDTO;
 import com.canchas.reservas.model.Cancha;
 import com.canchas.reservas.model.EstadoReserva;
 import com.canchas.reservas.model.Reserva;
@@ -26,6 +27,9 @@ public class ReservaService {
     @Autowired
     private ReservaRepository reservaRepository;
 
+    @Autowired
+    private NotificacionService notiService;
+
     public Reserva crearReserva(Reserva reserva) {
         if (reserva.getUsuario() == null ||
                 reserva.getUsuario().getId() == null ||
@@ -49,13 +53,13 @@ public class ReservaService {
     public List<Reserva> listarPorFecha(LocalDate fecha) {
         return reservaRepository.findByFechaReserva(fecha);
     }
+
     public Reserva actualizarEstadoReserva(Integer id, EstadoReserva nuevoEstado) {
         return reservaRepository.findById(id).map(reserva -> {
             reserva.setEstado(nuevoEstado);
             return reservaRepository.save(reserva);
         }).orElseThrow(() -> new IllegalArgumentException("Reserva no encontrada"));
     }
-
 
     public List<Reserva> listarTodas() {
         return reservaRepository.findAll();
@@ -71,6 +75,11 @@ public class ReservaService {
             reserva.setComprobanteUrl(reservaActualizado.getComprobanteUrl());
             reserva.setMontoTotal(reservaActualizado.getMontoTotal());
 
+            // Campos de cancelación
+            reserva.setMotivoCancelacion(reservaActualizado.getMotivoCancelacion());
+            reserva.setObservacionCancelacion(reservaActualizado.getObservacionCancelacion());
+            reserva.setCanceladoPor(reservaActualizado.getCanceladoPor());
+
             // Cargar Usuario y Cancha por su id para asignarlos
             Integer usuarioId = reservaActualizado.getUsuario().getId();
             Integer canchaId = reservaActualizado.getCancha().getId();
@@ -83,19 +92,36 @@ public class ReservaService {
             reserva.setUsuario(usuario);
             reserva.setCancha(cancha);
 
-            return reservaRepository.save(reserva);
+            Reserva guardada = reservaRepository.save(reserva);
+
+            // Notifica al cliente si la reserva fue cancelada con motivo
+            if (guardada.getEstado() == EstadoReserva.cancelada
+                    && guardada.getMotivoCancelacion() != null) {
+
+                try {
+                    NotificacionDTO dto = new NotificacionDTO();
+                    dto.setIdUsuario(usuario.getId());
+                    dto.setMensaje("Tu reserva del " + guardada.getFechaReserva() +
+                            " fue cancelada. Motivo: " + guardada.getMotivoCancelacion());
+                    notiService.enviar(dto);
+                } catch (Exception e) {
+                    System.err.println("No se pudo enviar notificación: " + e.getMessage());
+                }
+            }
+
+            return guardada;
         }).orElseThrow(() -> new IllegalArgumentException("Reserva no encontrada"));
     }
-
-
 
     public void cancelarReserva(Integer id) {
         reservaRepository.deleteById(id);
     }
+
     public Reserva findById(Integer id) {
         Optional<Reserva> optionalReserva = reservaRepository.findById(id);
         return optionalReserva.orElse(null);
     }
+
     public Reserva guardarReserva(Reserva reserva) {
         return reservaRepository.save(reserva);
     }
