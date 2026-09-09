@@ -3,9 +3,13 @@ package com.canchas.reservas.model;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
 import lombok.Data;
+import org.hibernate.annotations.CreationTimestamp;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.LocalTime;
+import java.util.List;
+import java.util.ArrayList;
 
 @Table(name ="reservas")
 @Entity
@@ -51,6 +55,14 @@ public class Reserva {
     @Column(name = "cancelado_por")
     private String canceladoPor;
 
+    @CreationTimestamp
+    @Column(name = "fecha_creacion", updatable = false)
+    private LocalDateTime fechaCreacion;
+
+
+    @OneToMany(mappedBy = "reserva", cascade = CascadeType.ALL)
+    @JsonIgnoreProperties("reserva")
+    private List<Pago> pagos = new ArrayList<>();
 
     public Double getMontoTotal() {
         return montoTotal;
@@ -156,9 +168,21 @@ public class Reserva {
         this.canceladoPor = canceladoPor;
     }
 
+    public LocalDateTime getFechaCreacion() {
+        return fechaCreacion;
+    }
+
     @Column(name = "monto_total")
     private Double montoTotal;
 
 
+
+    public List<Pago> getPagos() {
+        return pagos;
+    }
+
+    public void setPagos(List<Pago> pagos) {
+        this.pagos = pagos;
+    }
 
 }

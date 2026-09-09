@@ -31,6 +31,9 @@ public class Usuario {
     @Column(name = "reset_token_expiration")
     private LocalDateTime resetTokenExpiration;
 
+    @Column(name = "habilitado")
+    private Boolean habilitado = true;
+
     public Usuario() {
     }
     public Usuario(Integer id) {
@@ -62,4 +65,7 @@ public class Usuario {
 
     public LocalDateTime getResetTokenExpiration() { return resetTokenExpiration; }
     public void setResetTokenExpiration(LocalDateTime resetTokenExpiration) { this.resetTokenExpiration = resetTokenExpiration; }
+
+    public Boolean getHabilitado() { return habilitado; }
+    public void setHabilitado(Boolean habilitado) { this.habilitado = habilitado; }
 }

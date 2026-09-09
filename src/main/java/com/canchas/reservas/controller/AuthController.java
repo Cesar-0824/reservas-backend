@@ -12,6 +12,7 @@ import org.springframework.http.*;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.Map;
 import java.util.Optional;
 
 @RestController
@@ -45,11 +46,27 @@ public class AuthController {
     @PostMapping("/login")
     public ResponseEntity<?> login(@RequestBody LoginRequest req) {
         Optional<Usuario> userOpt = repo.findByEmail(req.getEmail());
-        if (userOpt.isEmpty()) return ResponseEntity.status(401).body("Credenciales inválidas");
+        if (userOpt.isEmpty()) {
+            return ResponseEntity.status(404).body(Map.of(
+                    "codigo", "CORREO_NO_REGISTRADO",
+                    "mensaje", "El correo electrónico que has introducido no está asociado a ninguna cuenta."
+            ));
+        }
 
         Usuario u = userOpt.get();
+
+        if (u.getHabilitado() != null && !u.getHabilitado()) {
+            return ResponseEntity.status(403).body(Map.of(
+                    "codigo", "USUARIO_DESHABILITADO",
+                    "mensaje", "Usuario deshabilitado. Comunícate con el administrador."
+            ));
+        }
+
         if (!encoder.matches(req.getPassword(), u.getContrasena()))
-            return ResponseEntity.status(401).body("Credenciales inválidas");
+            return ResponseEntity.status(401).body(Map.of(
+                    "codigo", "CREDENCIALES_INVALIDAS",
+                    "mensaje", "Credenciales inválidas"
+            ));
 
         String token = jwtUtil.generateToken(u.getEmail(), u.getRol().name());
         return ResponseEntity.ok(new LoginResponse(token, u.getEmail(), u.getId(), u.getNombre(), u.getRol(), u.getFechaRegistro()));

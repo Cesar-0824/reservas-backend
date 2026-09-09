@@ -89,15 +89,16 @@ public class ReservaController {
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> cancelarReserva(@PathVariable Integer id) {
-        // Devolver una respuesta HTTP adecuada tras la eliminación
+    public ResponseEntity<?> cancelarReserva(@PathVariable Integer id) {
         try {
             reservaService.cancelarReserva(id);
-            return ResponseEntity.noContent().build(); // 204 No Content si la eliminación fue exitosa
+            return ResponseEntity.noContent().build();
+        } catch (IllegalStateException e) {
+            return ResponseEntity.status(HttpStatus.CONFLICT).body(e.getMessage()); // 409
         } catch (IllegalArgumentException e) {
-            return ResponseEntity.notFound().build(); // 404 Not Found si la reserva no existe
+            return ResponseEntity.notFound().build();
         } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build(); // 500 Internal Server Error
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }
 }

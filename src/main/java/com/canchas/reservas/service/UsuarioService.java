@@ -35,6 +35,7 @@ public class UsuarioService implements UserDetailsService {
                 .username(usuario.getEmail())
                 .password(usuario.getContrasena())
                 .roles(usuario.getRol().name())
+                .disabled(usuario.getHabilitado() != null && !usuario.getHabilitado()) // 👈 nuevo
                 .build();
     }
 
@@ -66,12 +67,22 @@ public class UsuarioService implements UserDetailsService {
     // --- Actualizar usuario ---
     public Usuario actualizarUsuario(Integer id, Usuario datosActualizados) {
         return usuarioRepository.findById(id).map(usuario -> {
-            usuario.setNombre(datosActualizados.getNombre());
-            usuario.setEmail(datosActualizados.getEmail());
+            if (datosActualizados.getNombre() != null) {
+                usuario.setNombre(datosActualizados.getNombre());
+            }
+            if (datosActualizados.getEmail() != null) {
+                usuario.setEmail(datosActualizados.getEmail());
+            }
             if (datosActualizados.getContrasena() != null && !datosActualizados.getContrasena().isBlank()) {
                 usuario.setContrasena(passwordEncoder.encode(datosActualizados.getContrasena()));
             }
-            usuario.setRol(datosActualizados.getRol());
+            if (datosActualizados.getRol() != null) {
+                usuario.setRol(datosActualizados.getRol());
+            }
+            if (datosActualizados.getHabilitado() != null) {
+                usuario.setHabilitado(datosActualizados.getHabilitado());
+            }
+
             return usuarioRepository.save(usuario);
         }).orElseThrow(() -> new IllegalArgumentException("Usuario no encontrado con ID: " + id));
     }

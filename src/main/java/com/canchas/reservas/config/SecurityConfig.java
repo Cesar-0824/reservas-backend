@@ -46,7 +46,8 @@ public class SecurityConfig {
                                 "/api/auth/**",
                                 "/api/usuarios/registrar",
                                 "/api/usuarios/verificar",
-                                "/api/usuarios/validarCorreo"
+                                "/api/usuarios/validarCorreo",
+                                "/api/configuracion"
                         ).permitAll()
 
                         // Solo administrador

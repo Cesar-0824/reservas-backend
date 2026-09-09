@@ -2,6 +2,7 @@ package com.canchas.reservas.service;
 
 import com.canchas.reservas.DTO.NotificacionDTO;
 import com.canchas.reservas.model.Cancha;
+import com.canchas.reservas.model.ConfiguracionClub;
 import com.canchas.reservas.model.EstadoReserva;
 import com.canchas.reservas.model.Reserva;
 import com.canchas.reservas.model.Usuario;
@@ -11,7 +12,10 @@ import com.canchas.reservas.repository.UsuarioRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.time.Duration;
 import java.time.LocalDate;
+import java.time.LocalTime;
+import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.Optional;
 
@@ -30,6 +34,9 @@ public class ReservaService {
     @Autowired
     private NotificacionService notiService;
 
+    @Autowired
+    private ConfiguracionClubService configuracionClubService;
+
     public Reserva crearReserva(Reserva reserva) {
         if (reserva.getUsuario() == null ||
                 reserva.getUsuario().getId() == null ||
@@ -43,7 +50,79 @@ public class ReservaService {
             throw new IllegalArgumentException("Cancha inválida o no existe");
         }
 
+        validarReglasDeReserva(reserva);
+
         return reservaRepository.save(reserva);
+    }
+
+    // --- Valida horario de atención, duración y anticipación máxima ---
+    private void validarReglasDeReserva(Reserva reserva) {
+        ConfiguracionClub config = configuracionClubService.obtenerConfiguracion();
+
+        LocalDate fecha = reserva.getFechaReserva();
+        LocalTime horaInicio = reserva.getHoraInicio();
+        LocalTime horaFin = reserva.getHoraFin();
+
+        if (fecha == null || horaInicio == null || horaFin == null) {
+            throw new IllegalArgumentException("Fecha, hora de inicio y hora de fin son obligatorias");
+        }
+
+        // --- Horario de atención ---
+        // Si horaApertura y horaCierre son iguales (ej. 00:00 - 00:00), se interpreta
+        // como "abierto 24 horas" y no se aplica ninguna restricción de horario.
+        if (config.getHoraApertura() != null && config.getHoraCierre() != null
+                && !config.getHoraApertura().equals(config.getHoraCierre())) {
+
+            LocalTime apertura = LocalTime.parse(config.getHoraApertura());
+            LocalTime cierre = LocalTime.parse(config.getHoraCierre());
+
+            boolean cruzaMedianoche = cierre.isBefore(apertura);
+
+            boolean horaInicioValida;
+            boolean horaFinValida;
+
+            if (cruzaMedianoche) {
+                horaInicioValida = !horaInicio.isBefore(apertura) || !horaInicio.isAfter(cierre);
+                horaFinValida = !horaFin.isBefore(apertura) || !horaFin.isAfter(cierre);
+            } else {
+                horaInicioValida = !horaInicio.isBefore(apertura) && !horaInicio.isAfter(cierre);
+                horaFinValida = !horaFin.isBefore(apertura) && !horaFin.isAfter(cierre);
+            }
+
+            if (!horaInicioValida || !horaFinValida) {
+                throw new IllegalArgumentException(
+                        "La reserva debe estar dentro del horario de atención (" +
+                                apertura + " - " + cierre + ")");
+            }
+        }
+
+        // --- Duración mínima y máxima ---
+        long minutosDuracion = Duration.between(horaInicio, horaFin).toMinutes();
+        if (minutosDuracion <= 0) {
+            throw new IllegalArgumentException("La hora de fin debe ser posterior a la hora de inicio");
+        }
+
+        if (config.getDuracionMinima() != null && minutosDuracion < config.getDuracionMinima() * 60L) {
+            throw new IllegalArgumentException(
+                    "La duración mínima de una reserva es de " + config.getDuracionMinima() + " hora(s)");
+        }
+        if (config.getDuracionMaxima() != null && minutosDuracion > config.getDuracionMaxima() * 60L) {
+            throw new IllegalArgumentException(
+                    "La duración máxima de una reserva es de " + config.getDuracionMaxima() + " hora(s)");
+        }
+
+        // --- Anticipación máxima ---
+        if (config.getAnticipacionMaximaDias() != null) {
+            long dias = ChronoUnit.DAYS.between(LocalDate.now(), fecha);
+
+            if (dias < 0) {
+                throw new IllegalArgumentException("No se puede reservar en una fecha pasada");
+            }
+            if (dias > config.getAnticipacionMaximaDias()) {
+                throw new IllegalArgumentException(
+                        "No se puede reservar con más de " + config.getAnticipacionMaximaDias() + " días de anticipación");
+            }
+        }
     }
 
     public List<Reserva> listarPorUsuario(Usuario usuario) {
@@ -65,6 +144,7 @@ public class ReservaService {
         return reservaRepository.findAll();
     }
 
+    // Usado por el ADMIN (cancelar con motivo, confirmar, etc.) — no se restringe por permitirCancelaciones
     public Reserva actualizarReserva(Integer id, Reserva reservaActualizado) {
         return reservaRepository.findById(id).map(reserva -> {
             reserva.setFechaReserva(reservaActualizado.getFechaReserva());
@@ -75,12 +155,10 @@ public class ReservaService {
             reserva.setComprobanteUrl(reservaActualizado.getComprobanteUrl());
             reserva.setMontoTotal(reservaActualizado.getMontoTotal());
 
-            // Campos de cancelación
             reserva.setMotivoCancelacion(reservaActualizado.getMotivoCancelacion());
             reserva.setObservacionCancelacion(reservaActualizado.getObservacionCancelacion());
             reserva.setCanceladoPor(reservaActualizado.getCanceladoPor());
 
-            // Cargar Usuario y Cancha por su id para asignarlos
             Integer usuarioId = reservaActualizado.getUsuario().getId();
             Integer canchaId = reservaActualizado.getCancha().getId();
 
@@ -94,10 +172,8 @@ public class ReservaService {
 
             Reserva guardada = reservaRepository.save(reserva);
 
-            // Notifica al cliente si la reserva fue cancelada con motivo
             if (guardada.getEstado() == EstadoReserva.cancelada
                     && guardada.getMotivoCancelacion() != null) {
-
                 try {
                     NotificacionDTO dto = new NotificacionDTO();
                     dto.setIdUsuario(usuario.getId());
@@ -113,7 +189,18 @@ public class ReservaService {
         }).orElseThrow(() -> new IllegalArgumentException("Reserva no encontrada"));
     }
 
+    // Usado por el CLIENTE para cancelar su propia reserva — sí respeta permitirCancelaciones
     public void cancelarReserva(Integer id) {
+        ConfiguracionClub config = configuracionClubService.obtenerConfiguracion();
+
+        if (Boolean.FALSE.equals(config.getPermitirCancelaciones())) {
+            throw new IllegalStateException("Las cancelaciones están deshabilitadas actualmente.");
+        }
+
+        if (!reservaRepository.existsById(id)) {
+            throw new IllegalArgumentException("Reserva no encontrada");
+        }
+
         reservaRepository.deleteById(id);
     }
 
