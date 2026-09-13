@@ -44,5 +44,25 @@ public class NotificacionController {
             return ResponseEntity.status(500).body("Error al eliminar notificación: " + e.getMessage());
         }
     }
+    @PatchMapping("/{id}/leer")
+    public ResponseEntity<?> marcarLeida(@PathVariable Integer id) {
+        try {
+            Notificacion noti = notiService.marcarLeida(id);
+            return ResponseEntity.ok(noti);
+        } catch (Exception e) {
+            return ResponseEntity.status(404).body(e.getMessage());
+        }
+    }
+    @PatchMapping("/usuario/{id}/leer-todas")
+    public ResponseEntity<?> marcarTodasLeidas(@PathVariable Integer id) {
+        try {
+            Usuario u = new Usuario(id);
+            u.setId(id);
+            notiService.marcarTodasLeidas(u);
+            return ResponseEntity.ok("Todas marcadas como leídas");
+        } catch (Exception e) {
+            return ResponseEntity.status(500).body("Error: " + e.getMessage());
+        }
+    }
 }
 

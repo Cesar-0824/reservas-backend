@@ -3,12 +3,15 @@ package com.canchas.reservas.controller;
 import com.canchas.reservas.model.EstadoReserva;
 import com.canchas.reservas.model.Pago;
 import com.canchas.reservas.model.Reserva;
+import com.canchas.reservas.service.EmailService;
 import com.canchas.reservas.service.MercadoPagoService;
 import com.canchas.reservas.service.PagoService;
 import com.canchas.reservas.service.ReservaService;
+
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+
 
 import java.util.Map;
 
@@ -19,16 +22,25 @@ public class PagoController {
     private final PagoService pagoService;
     private final ReservaService reservaService;
     private final MercadoPagoService mercadoPagoService;
+    private final EmailService emailService;
 
-    public PagoController(PagoService pagoService, ReservaService reservaService, MercadoPagoService mercadoPagoService) {
+    public PagoController(PagoService pagoService, ReservaService reservaService,
+                          MercadoPagoService mercadoPagoService, EmailService emailService) {
         this.pagoService = pagoService;
         this.reservaService = reservaService;
         this.mercadoPagoService = mercadoPagoService;
+        this.emailService = emailService;
+    }
+    public static class ComprobanteRequest {
+        public String tipo;
+        public String ruc;
+        public String razonSocial;
+        public String direccionFiscal;
     }
 
     // Confirmar pago ficticio (NO ES NECESARIO para producción, solo para pruebas)
     @PostMapping("/reservas/{id}/pagar")
-    public ResponseEntity<?> pagarReserva(@PathVariable Integer id) {
+    public ResponseEntity<?> pagarReserva(@PathVariable Integer id, @RequestBody(required = false) ComprobanteRequest comprobante) {
         Reserva reserva = reservaService.findById(id);
         if (reserva == null) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Reserva no encontrada");
@@ -36,7 +48,17 @@ public class PagoController {
         if (!reserva.getEstado().equals(EstadoReserva.confirmada)) {
             return ResponseEntity.badRequest().body("La reserva no está confirmada y no se puede pagar");
         }
-        reservaService.actualizarEstadoReserva(id, EstadoReserva.pagada);
+
+        if (comprobante != null) {
+            reserva.setTipoComprobante(comprobante.tipo);
+            reserva.setRucComprobante(comprobante.ruc);
+            reserva.setRazonSocialComprobante(comprobante.razonSocial);
+            reserva.setDireccionFiscalComprobante(comprobante.direccionFiscal);
+        }
+
+        reserva.setEstado(EstadoReserva.pagada);
+        reservaService.guardarReserva(reserva);
+
         return ResponseEntity.ok("Pago ficticio confirmado y reserva actualizada");
     }
 
@@ -119,5 +141,6 @@ public class PagoController {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error procesando webhook");
         }
     }
+
 
 }

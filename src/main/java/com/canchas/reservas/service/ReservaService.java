@@ -1,19 +1,16 @@
 package com.canchas.reservas.service;
 
 import com.canchas.reservas.DTO.NotificacionDTO;
-import com.canchas.reservas.model.Cancha;
-import com.canchas.reservas.model.ConfiguracionClub;
-import com.canchas.reservas.model.EstadoReserva;
-import com.canchas.reservas.model.Reserva;
-import com.canchas.reservas.model.Usuario;
+import com.canchas.reservas.model.*;
 import com.canchas.reservas.repository.CanchaRepository;
 import com.canchas.reservas.repository.ReservaRepository;
 import com.canchas.reservas.repository.UsuarioRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-
+import com.canchas.reservas.model.EstadoCancha;
 import java.time.Duration;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
@@ -65,6 +62,13 @@ public class ReservaService {
 
         if (fecha == null || horaInicio == null || horaFin == null) {
             throw new IllegalArgumentException("Fecha, hora de inicio y hora de fin son obligatorias");
+        }
+        LocalDateTime fechaHoraReserva = LocalDateTime.of(fecha, horaInicio);
+        if (fechaHoraReserva.isBefore(LocalDateTime.now())) {
+            throw new IllegalArgumentException("No se puede reservar en una fecha u hora que ya pasó");
+        }
+        if (reserva.getCancha() != null && reserva.getCancha().getEstado() != EstadoCancha.activa) {
+            throw new IllegalArgumentException("La cancha no está disponible actualmente para reservas");
         }
 
         // --- Horario de atención ---

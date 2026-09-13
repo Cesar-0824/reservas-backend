@@ -47,4 +47,18 @@ public class NotificacionService {
         }
         notificacionRepository.deleteById(id);
     }
+    public Notificacion marcarLeida(Integer id) {
+        Notificacion noti = notificacionRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Notificación no encontrada"));
+        noti.setLeida(true);
+        return notificacionRepository.save(noti);
+    }
+    public void marcarTodasLeidas(Usuario usuario) {
+        List<Notificacion> noLeidas = notificacionRepository.findByUsuarioAndLeida(usuario, false);
+        for (Notificacion n : noLeidas) {
+            n.setLeida(true);
+        }
+        notificacionRepository.saveAll(noLeidas);
+    }
+
 }

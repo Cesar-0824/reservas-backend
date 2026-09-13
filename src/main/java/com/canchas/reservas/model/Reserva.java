@@ -64,6 +64,41 @@ public class Reserva {
     @JsonIgnoreProperties("reserva")
     private List<Pago> pagos = new ArrayList<>();
 
+    @Column(name = "tipo_comprobante")
+    private String tipoComprobante; // "boleta" | "factura"
+
+    @Column(name = "ruc_comprobante")
+    private String rucComprobante;
+
+    @Column(name = "razon_social_comprobante")
+    private String razonSocialComprobante;
+
+    @Column(name = "direccion_fiscal_comprobante")
+    private String direccionFiscalComprobante;
+
+
+
+    @Column(name = "recordatorio_24h_enviado")
+    private Boolean recordatorio24hEnviado = false;
+
+    @Column(name = "recordatorio_2h_enviado")
+    private Boolean recordatorio2hEnviado = false;
+
+    public Boolean getRecordatorio24hEnviado() {
+        return recordatorio24hEnviado;
+    }
+
+    public void setRecordatorio24hEnviado(Boolean recordatorio24hEnviado) {
+        this.recordatorio24hEnviado = recordatorio24hEnviado;
+    }
+
+    public Boolean getRecordatorio2hEnviado() {
+        return recordatorio2hEnviado;
+    }
+
+    public void setRecordatorio2hEnviado(Boolean recordatorio2hEnviado) {
+        this.recordatorio2hEnviado = recordatorio2hEnviado;
+    }
     public Double getMontoTotal() {
         return montoTotal;
     }
@@ -172,6 +207,8 @@ public class Reserva {
         return fechaCreacion;
     }
 
+
+
     @Column(name = "monto_total")
     private Double montoTotal;
 
@@ -183,6 +220,38 @@ public class Reserva {
 
     public void setPagos(List<Pago> pagos) {
         this.pagos = pagos;
+    }
+
+    public String getTipoComprobante() {
+        return tipoComprobante;
+    }
+
+    public void setTipoComprobante(String tipoComprobante) {
+        this.tipoComprobante = tipoComprobante;
+    }
+
+    public String getRucComprobante() {
+        return rucComprobante;
+    }
+
+    public void setRucComprobante(String rucComprobante) {
+        this.rucComprobante = rucComprobante;
+    }
+
+    public String getRazonSocialComprobante() {
+        return razonSocialComprobante;
+    }
+
+    public void setRazonSocialComprobante(String razonSocialComprobante) {
+        this.razonSocialComprobante = razonSocialComprobante;
+    }
+
+    public String getDireccionFiscalComprobante() {
+        return direccionFiscalComprobante;
+    }
+
+    public void setDireccionFiscalComprobante(String direccionFiscalComprobante) {
+        this.direccionFiscalComprobante = direccionFiscalComprobante;
     }
 
 }

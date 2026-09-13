@@ -3,6 +3,7 @@ package com.canchas.reservas.controller;
 import com.cloudinary.Cloudinary;
 import com.cloudinary.utils.ObjectUtils;
 import com.canchas.reservas.model.Cancha;
+import com.canchas.reservas.model.EstadoCancha;
 import com.canchas.reservas.repository.CanchaRepository;
 import com.canchas.reservas.service.CanchaService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -33,28 +34,30 @@ public class CanchaController {
             @RequestParam("nombre") String nombre,
             @RequestParam("tipo") String tipo,
             @RequestParam("precio") Double precioHora,
-            @RequestParam(value = "imagen", required = false) MultipartFile imagen
+            @RequestParam(value = "imagen", required = false) MultipartFile imagen,
+            @RequestParam(value = "modalidad", required = false) String modalidad,
+            @RequestParam(value = "dimensiones", required = false) String dimensiones,
+            @RequestParam(value = "tipoSuperficie", required = false) String tipoSuperficie,
+            @RequestParam(value = "iluminacion", required = false) String iluminacion,
+            @RequestParam(value = "caracteristicas", required = false) String caracteristicas,
+            @RequestParam(value = "descripcion", required = false) String descripcion
     ) {
         try {
             String urlImagen = null;
-
             if (imagen != null && !imagen.isEmpty()) {
                 urlImagen = subirACloudinary(imagen);
             }
 
-            Cancha nueva = new Cancha();
-            nueva.setNombre(nombre);
-            nueva.setTipo(tipo);
-            nueva.setPrecioHora(precioHora);
-            nueva.setImagen(urlImagen);
-
-            Cancha guardada = canchaRepository.save(nueva);
+            Cancha guardada = canchaService.registrarCancha(
+                    nombre, tipo, precioHora, urlImagen,
+                    modalidad, dimensiones, tipoSuperficie, iluminacion, caracteristicas, descripcion
+            );
             return ResponseEntity.ok(guardada);
 
         } catch (Exception e) {
             e.printStackTrace();
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body("Error al guardar la imagen: " + e.getMessage());
+                    .body("Error al guardar la cancha: " + e.getMessage());
         }
     }
 
@@ -69,22 +72,46 @@ public class CanchaController {
             @RequestParam("nombre") String nombre,
             @RequestParam("tipo") String tipo,
             @RequestParam("precio") Double precioHora,
-            @RequestParam(value = "imagen", required = false) MultipartFile imagen
+            @RequestParam(value = "imagen", required = false) MultipartFile imagen,
+            @RequestParam(value = "modalidad", required = false) String modalidad,
+            @RequestParam(value = "dimensiones", required = false) String dimensiones,
+            @RequestParam(value = "tipoSuperficie", required = false) String tipoSuperficie,
+            @RequestParam(value = "iluminacion", required = false) String iluminacion,
+            @RequestParam(value = "caracteristicas", required = false) String caracteristicas,
+            @RequestParam(value = "descripcion", required = false) String descripcion
     ) {
         try {
             String urlImagen = null;
-
             if (imagen != null && !imagen.isEmpty()) {
                 urlImagen = subirACloudinary(imagen);
             }
 
-            Cancha actualizada = canchaService.actualizarCancha(id, nombre, tipo, precioHora, urlImagen);
+            Cancha actualizada = canchaService.actualizarCancha(
+                    id, nombre, tipo, precioHora, urlImagen,
+                    modalidad, dimensiones, tipoSuperficie, iluminacion, caracteristicas, descripcion
+            );
             return ResponseEntity.ok(actualizada);
 
         } catch (Exception e) {
             e.printStackTrace();
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body("Error al actualizar la imagen: " + e.getMessage());
+                    .body("Error al actualizar la cancha: " + e.getMessage());
+        }
+    }
+
+    @PatchMapping("/{id}/estado")
+    public ResponseEntity<?> cambiarEstado(
+            @PathVariable Integer id,
+            @RequestParam EstadoCancha estado,
+            @RequestParam(required = false) String motivo,
+            @RequestParam(required = false) String observacion
+    ) {
+        try {
+            Cancha actualizada = canchaService.cambiarEstado(id, estado, motivo, observacion);
+            return ResponseEntity.ok(actualizada);
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("Error al cambiar el estado: " + e.getMessage());
         }
     }
 
@@ -100,7 +127,6 @@ public class CanchaController {
         canchaService.eliminarCancha(id);
     }
 
-    // Sube el archivo a Cloudinary (carpeta "canchas") y devuelve la URL publica (https, con CDN)
     private String subirACloudinary(MultipartFile imagen) throws java.io.IOException {
         Map<?, ?> resultado = cloudinary.uploader().upload(
                 imagen.getBytes(),

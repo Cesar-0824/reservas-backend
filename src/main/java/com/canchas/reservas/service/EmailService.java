@@ -65,4 +65,41 @@ public class EmailService {
                 String.class
         );
     }
+    public void enviarCorreoRecordatorio(String destinatario, String nombreUsuario, String cancha, String fecha, String horaInicio, String horaFin, String horasRestantes) {
+        String htmlContent =
+                "<p>Hola " + nombreUsuario + ",</p>" +
+                        "<p>Te recordamos que tienes una reserva próxima:</p>" +
+                        "<p><strong>Cancha:</strong> " + cancha + "<br>" +
+                        "<strong>Fecha:</strong> " + fecha + "<br>" +
+                        "<strong>Horario:</strong> " + horaInicio + " - " + horaFin + "</p>" +
+                        "<p>Tu reserva es en aproximadamente " + horasRestantes + ".</p>" +
+                        "<p>Saludos,<br>Equipo SportsMatch</p>";
+
+        Map<String, Object> body = new HashMap<>();
+
+        Map<String, String> sender = new HashMap<>();
+        sender.put("name", senderName);
+        sender.put("email", senderEmail);
+        body.put("sender", sender);
+
+        Map<String, String> to = new HashMap<>();
+        to.put("email", destinatario);
+        body.put("to", List.of(to));
+
+        body.put("subject", "Recordatorio de tu reserva - SportsMatch");
+        body.put("htmlContent", htmlContent);
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
+        headers.set("api-key", brevoApiKey);
+        headers.set("accept", "application/json");
+
+        HttpEntity<Map<String, Object>> request = new HttpEntity<>(body, headers);
+
+        restTemplate.postForEntity(
+                "https://api.brevo.com/v3/smtp/email",
+                request,
+                String.class
+        );
+    }
 }
