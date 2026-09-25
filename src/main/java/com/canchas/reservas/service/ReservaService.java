@@ -63,7 +63,16 @@ public class ReservaService {
         double precioHora = cancha.getPrecioHora() != null ? cancha.getPrecioHora() : 0.0;
         reserva.setMontoTotal(precioHora * (minutosDuracion / 60.0));
 
-        return reservaRepository.save(reserva);
+        // NUEVO: red de seguridad ante condiciones de carrera (dos reservas simultáneas
+        // en el mismo horario). El constraint UNIQUE de la base de datos (slot_activo)
+        // es la última línea de defensa si dos peticiones pasan la validación de Java
+        // casi al mismo tiempo, antes de que cualquiera de las dos se haya guardado.
+        try {
+            return reservaRepository.save(reserva);
+        } catch (org.springframework.dao.DataIntegrityViolationException e) {
+            throw new IllegalArgumentException(
+                    "Ese horario ya fue reservado por otra persona. Por favor, elige otro horario.");
+        }
     }
 
     // --- Evita que dos reservas se solapen en la misma cancha/fecha ---
