@@ -3,8 +3,8 @@ package com.canchas.reservas.DTO;
 public class NotificacionDTO {
     private Integer idUsuario;
     private String mensaje;
+    private Integer idReserva; // NUEVO
 
-    // Getters y setters
     public Integer getIdUsuario() {
         return idUsuario;
     }
@@ -19,5 +19,13 @@ public class NotificacionDTO {
 
     public void setMensaje(String mensaje) {
         this.mensaje = mensaje;
+    }
+
+    public Integer getIdReserva() {
+        return idReserva;
+    }
+
+    public void setIdReserva(Integer idReserva) {
+        this.idReserva = idReserva;
     }
 }

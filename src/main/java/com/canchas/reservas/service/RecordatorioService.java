@@ -84,18 +84,17 @@ public class RecordatorioService {
         String fechaFmt = r.getFechaReserva().format(FECHA_FMT);
         String cancha = r.getCancha() != null ? r.getCancha().getNombre() : "tu cancha";
 
-        // 1. Notificación en el sistema (campana)
         try {
             com.canchas.reservas.DTO.NotificacionDTO dto = new com.canchas.reservas.DTO.NotificacionDTO();
             dto.setIdUsuario(r.getUsuario().getId());
             dto.setMensaje("Tu reserva en " + cancha + " del " + fechaFmt +
                     " a las " + r.getHoraInicio() + " es en " + horasRestantes + ".");
+            dto.setIdReserva(r.getId()); // NUEVO
             notificacionService.enviar(dto);
         } catch (Exception e) {
             System.err.println("No se pudo guardar notificación de recordatorio: " + e.getMessage());
         }
 
-        // 2. Correo
         try {
             emailService.enviarCorreoRecordatorio(
                     r.getUsuario().getEmail(),
@@ -108,6 +107,76 @@ public class RecordatorioService {
             );
         } catch (Exception e) {
             System.err.println("No se pudo enviar correo de recordatorio: " + e.getMessage());
+        }
+    }
+    @Scheduled(fixedRate = 60 * 1000)
+    public void cancelarReservasPorVencimientoPago() {
+        LocalDateTime ahora = LocalDateTime.now();
+
+        List<Reserva> pendientesPago = reservaRepository.findByEstadoIn(
+                List.of(EstadoReserva.confirmada)
+        );
+
+        for (Reserva r : pendientesPago) {
+            if (r.getFechaLimitePago() == null) continue;
+
+            if (r.getFechaLimitePago().isBefore(ahora)) {
+                r.setEstado(EstadoReserva.cancelada);
+                r.setCanceladoPor("sistema");
+                r.setMotivoCancelacion("Pago no realizado dentro del plazo establecido");
+                reservaRepository.save(r);
+
+                String cancha = r.getCancha() != null ? r.getCancha().getNombre() : "tu cancha";
+
+                // Notificación interna al usuario
+                try {
+                    com.canchas.reservas.DTO.NotificacionDTO dto = new com.canchas.reservas.DTO.NotificacionDTO();
+                    dto.setIdUsuario(r.getUsuario().getId());
+                    dto.setMensaje("Tu reserva en " + cancha + " del " + r.getFechaReserva().format(FECHA_FMT) +
+                            " fue cancelada automáticamente por falta de pago.");
+                    dto.setIdReserva(r.getId()); // NUEVO
+                    notificacionService.enviar(dto);
+                } catch (Exception e) {
+                    System.err.println("No se pudo notificar al usuario (vencimiento pago): " + e.getMessage());
+                }
+
+                // Notificación interna a los admins
+                try {
+                    notificacionService.notificarAdmins(
+                            "Reserva #" + r.getId() + " de " + r.getUsuario().getNombre() +
+                                    " fue cancelada automáticamente por falta de pago."
+                    );
+                } catch (Exception e) {
+                    System.err.println("No se pudo notificar a los admins (vencimiento pago): " + e.getMessage());
+                }
+
+                // Correo al usuario (ya existente)
+                try {
+                    emailService.enviarCorreoCancelacion(
+                            r.getUsuario().getEmail(),
+                            r.getUsuario().getNombre(),
+                            cancha,
+                            r.getFechaReserva().format(FECHA_FMT),
+                            String.valueOf(r.getHoraInicio()),
+                            String.valueOf(r.getHoraFin()),
+                            r.getMotivoCancelacion(),
+                            true
+                    );
+                } catch (Exception e) {
+                    System.err.println("No se pudo enviar correo de cancelación por vencimiento: " + e.getMessage());
+                }
+
+                // Correo institucional al admin (preparado, inactivo hasta configurar club.email.institucional)
+                try {
+                    emailService.enviarCorreoInstitucionalAdmin(
+                            "Cancelación automática por falta de pago",
+                            "<p>La reserva #" + r.getId() + " de <strong>" + r.getUsuario().getNombre() +
+                                    "</strong> fue cancelada automáticamente por falta de pago.</p>"
+                    );
+                } catch (Exception e) {
+                    System.err.println("No se pudo enviar correo institucional (vencimiento pago): " + e.getMessage());
+                }
+            }
         }
     }
 }

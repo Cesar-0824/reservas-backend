@@ -92,5 +92,47 @@ public class AuthController {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
         }
     }
+    // <<<<<<< NUEVO: endpoint para validar sesión desde el frontend
+    @GetMapping("/me")
+    public ResponseEntity<?> me(@RequestHeader(value = "Authorization", required = false) String authHeader) {
+        if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+            return ResponseEntity.status(401).body(Map.of(
+                    "codigo", "TOKEN_FALTANTE",
+                    "mensaje", "No se envió token de autenticación"
+            ));
+        }
+
+        String token = authHeader.substring(7);
+
+        String email;
+        try {
+            email = jwtUtil.extractUsername(token);
+            if (email == null) {
+                throw new RuntimeException("Token sin username");
+            }
+        } catch (Exception e) {
+            return ResponseEntity.status(401).body(Map.of(
+                    "codigo", "TOKEN_INVALIDO",
+                    "mensaje", "Token inválido o expirado"
+            ));
+        }
+
+        Optional<Usuario> userOpt = repo.findByEmail(email);
+        if (userOpt.isEmpty()) {
+            return ResponseEntity.status(401).body(Map.of(
+                    "codigo", "USUARIO_NO_ENCONTRADO",
+                    "mensaje", "Usuario no encontrado"
+            ));
+        }
+
+        Usuario u = userOpt.get();
+        return ResponseEntity.ok(Map.of(
+                "id", u.getId(),
+                "email", u.getEmail(),
+                "nombre", u.getNombre(),
+                "rol", u.getRol()
+        ));
+    }
+// >>>>>>> FIN NUEVO
 
 }

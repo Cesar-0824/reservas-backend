@@ -5,6 +5,7 @@ import com.canchas.reservas.model.Rol;
 import com.canchas.reservas.model.Usuario;
 import com.canchas.reservas.repository.UsuarioRepository;
 import com.canchas.reservas.service.UsuarioService;
+import org.springframework.security.core.Authentication;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -36,8 +37,9 @@ public class UsuarioController {
 
             Usuario usuario = new Usuario();
             usuario.setNombre(usuarioDTO.getNombre());
+            usuario.setApellido(usuarioDTO.getApellido());
             usuario.setEmail(usuarioDTO.getEmail());
-            usuario.setContrasena(usuarioDTO.getContrasena()); // dejar en claro, se encripta en el Service
+            usuario.setContrasena(usuarioDTO.getContrasena());
             usuario.setRol(Rol.usuario);
 
             Usuario usuarioGuardado = usuarioService.guardarUsuario(usuario);
@@ -109,6 +111,25 @@ public class UsuarioController {
             response.put("estado", false);
             response.put("mensaje", "Error en la validación: " + e.getMessage());
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
+        }
+    }
+    @PutMapping("/mi-perfil")
+    public ResponseEntity<?> actualizarMiPerfil(
+            @RequestBody UsuarioDTO datosActualizados,
+            Authentication authentication) {
+        try {
+            String email = authentication.getName();
+            Usuario usuario = usuarioService.buscarPorEmail(email)
+                    .orElseThrow(() -> new IllegalArgumentException("Usuario no encontrado"));
+
+            usuario.setNombre(datosActualizados.getNombre());
+            usuario.setApellido(datosActualizados.getApellido());
+
+            Usuario actualizado = usuarioService.actualizarPerfilPropio(usuario);
+            return ResponseEntity.ok(actualizado);
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Map.of("error", e.getMessage()));
         }
     }
 

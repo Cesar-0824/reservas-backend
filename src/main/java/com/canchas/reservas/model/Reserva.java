@@ -76,6 +76,8 @@ public class Reserva {
     @Column(name = "direccion_fiscal_comprobante")
     private String direccionFiscalComprobante;
 
+    @Column(name = "fecha_limite_pago")
+    private LocalDateTime fechaLimitePago;
 
 
     @Column(name = "recordatorio_24h_enviado")
@@ -83,6 +85,12 @@ public class Reserva {
 
     @Column(name = "recordatorio_2h_enviado")
     private Boolean recordatorio2hEnviado = false;
+
+    @Column(name = "monto_total")
+    private Double montoTotal;
+    public List<Pago> getPagos() {
+        return pagos;
+    }
 
     public Boolean getRecordatorio24hEnviado() {
         return recordatorio24hEnviado;
@@ -208,16 +216,6 @@ public class Reserva {
     }
 
 
-
-    @Column(name = "monto_total")
-    private Double montoTotal;
-
-
-
-    public List<Pago> getPagos() {
-        return pagos;
-    }
-
     public void setPagos(List<Pago> pagos) {
         this.pagos = pagos;
     }
@@ -252,6 +250,13 @@ public class Reserva {
 
     public void setDireccionFiscalComprobante(String direccionFiscalComprobante) {
         this.direccionFiscalComprobante = direccionFiscalComprobante;
+    }
+    public LocalDateTime getFechaLimitePago() {
+        return fechaLimitePago;
+    }
+
+    public void setFechaLimitePago(LocalDateTime fechaLimitePago) {
+        this.fechaLimitePago = fechaLimitePago;
     }
 
 }

@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 
 public class UsuarioDTO {
     private String nombre;
+    private String apellido;
     private String email;
     private String contrasena;
 
@@ -23,4 +24,7 @@ public class UsuarioDTO {
 
     public String getContrasena() { return contrasena; }
     public void setContrasena(String contrasena) { this.contrasena = contrasena; }
+
+    public String getApellido() { return apellido; }
+    public void setApellido(String apellido) { this.apellido = apellido; }
 }

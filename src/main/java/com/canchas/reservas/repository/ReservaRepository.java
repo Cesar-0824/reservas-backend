@@ -12,4 +12,7 @@ public interface ReservaRepository extends JpaRepository<Reserva, Integer> {
     List<Reserva> findByUsuario(Usuario usuario);
     List<Reserva> findByFechaReserva(LocalDate fecha);
     List<Reserva> findByEstadoIn(List<EstadoReserva> estados);
+    // NUEVO: para validar solapamiento de horarios
+    List<Reserva> findByCanchaIdAndFechaReservaAndEstadoIn(
+            Integer canchaId, LocalDate fechaReserva, List<EstadoReserva> estados);
 }

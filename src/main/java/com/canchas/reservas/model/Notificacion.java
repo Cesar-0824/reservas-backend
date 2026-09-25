@@ -25,4 +25,7 @@ public class Notificacion {
     private LocalDateTime fechaEnvio = LocalDateTime.now();
 
     private Boolean leida = false;
+
+    @Column(name = "id_reserva")
+    private Integer idReserva; // NUEVO: vincula la notificación a una reserva, si aplica
 }

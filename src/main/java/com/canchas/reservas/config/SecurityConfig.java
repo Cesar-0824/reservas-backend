@@ -50,6 +50,7 @@ public class SecurityConfig {
                                 "/api/configuracion"
                         ).permitAll()
 
+                        .requestMatchers("/api/usuarios/mi-perfil").authenticated()
                         // Solo administrador
                         .requestMatchers("/api/usuarios/**").hasRole("admin")
                         .requestMatchers("/api/admin/**").hasRole("admin")

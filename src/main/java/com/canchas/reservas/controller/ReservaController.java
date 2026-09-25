@@ -48,6 +48,13 @@ public class ReservaController {
             if (reserva == null) {
                 return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Reserva no encontrada");
             }
+
+            // NUEVO: si se confirma, usar el flujo con plazo de pago + correo
+            if (estado == EstadoReserva.confirmada) {
+                Reserva confirmada = reservaService.confirmarReserva(id);
+                return ResponseEntity.ok(confirmada);
+            }
+
             reserva.setEstado(estado);
             reservaService.actualizarReserva(id, reserva);
             return ResponseEntity.ok("Estado de la reserva actualizado a: " + estado);

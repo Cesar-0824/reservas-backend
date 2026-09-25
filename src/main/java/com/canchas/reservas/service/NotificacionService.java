@@ -4,6 +4,7 @@ import com.canchas.reservas.DTO.NotificacionDTO;
 import com.canchas.reservas.model.Notificacion;
 import com.canchas.reservas.model.Usuario;
 import com.canchas.reservas.repository.NotificacionRepository;
+import com.canchas.reservas.repository.UsuarioRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -13,21 +14,22 @@ import java.util.List;
 public class NotificacionService {
 
     @Autowired
+    private UsuarioRepository usuarioRepository;
+    @Autowired
     private NotificacionRepository notificacionRepository;
 
     // Enviar una notificación a un usuario
     public Notificacion enviar(NotificacionDTO dto) {
-        // Verifica si ya existe una notificación igual para el mismo usuario
         boolean yaExiste = notificacionRepository.existsByUsuarioIdAndMensaje(dto.getIdUsuario(), dto.getMensaje());
 
         if (yaExiste) {
             throw new RuntimeException("Ya se envió esta notificación anteriormente.");
         }
 
-        // Crear y guardar la notificación
         Notificacion noti = new Notificacion();
-        noti.setUsuario(new Usuario(dto.getIdUsuario())); // Solo se establece ID para relacionar
+        noti.setUsuario(new Usuario(dto.getIdUsuario()));
         noti.setMensaje(dto.getMensaje());
+        noti.setIdReserva(dto.getIdReserva()); // NUEVO
 
         return notificacionRepository.save(noti);
     }
@@ -59,6 +61,25 @@ public class NotificacionService {
             n.setLeida(true);
         }
         notificacionRepository.saveAll(noLeidas);
+    }
+
+
+    // Notifica a todos los usuarios con rol admin (una notificación por cada uno)
+    public void notificarAdmins(String mensaje) {
+        List<Usuario> admins = usuarioRepository.findAll().stream()
+                .filter(u -> "admin".equalsIgnoreCase(String.valueOf(u.getRol())))
+                .toList();
+
+        for (Usuario admin : admins) {
+            try {
+                NotificacionDTO dto = new NotificacionDTO();
+                dto.setIdUsuario(admin.getId());
+                dto.setMensaje(mensaje);
+                enviar(dto);
+            } catch (Exception e) {
+                System.err.println("No se pudo notificar al admin " + admin.getId() + ": " + e.getMessage());
+            }
+        }
     }
 
 }

@@ -131,4 +131,9 @@ public class UsuarioService implements UserDetailsService {
     public String encodePassword(String rawPassword) {
         return passwordEncoder.encode(rawPassword);
     }
+
+    // --- Guardar cambios de perfil propio (sin validar email duplicado) ---
+    public Usuario actualizarPerfilPropio(Usuario usuario) {
+        return usuarioRepository.save(usuario);
+    }
 }
